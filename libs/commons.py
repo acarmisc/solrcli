@@ -1,4 +1,5 @@
 from pysolr import Solr
+import click
 import requests
 import os
 import configparser
@@ -70,10 +71,12 @@ class SolrServer():
 
     def invoke_reload(self):
         url = self.urls.get('reload')
+        click.echo('Invoking reload: {}'.format(url))
         r = requests.get(url)
         return r
 
     def invoke_fullimport(self):
         url = self.urls.get('full-import')
+        click.echo('Invoking full import: {}'.format(url))
         r = requests.get(url)
         return r
