@@ -9,8 +9,7 @@ def column_values_at_least(db_data, column, gt=1):
 
     try:
         with connection.cursor() as cursor:
-            existance_query = 'SELECT count(1) from ({}) as t where {} is not null and {} <> "".format(db_data.get('query'),
-                                                                                           column)
+            existance_query = 'SELECT count(1) from ({}) as t where {} is not null and {} <> ""'.format(db_data.get('query'), column, column)
             sql = existance_query
             cursor.execute(sql)
             results = cursor.fetchone()
