@@ -114,8 +114,12 @@ Options:
   --sanitycheck / --no-sanitycheck
                                   Perform full-import only if sanity check
                                   succeded.
+  --notify TEXT                   Comma separated list of e-mail to deliver
+                                  result
   --help                          Show this message and exit.
 ```
+
+The `--notify` params allows you to receive an e-mail after data import will be completed.
 
 If `--sanitycheck` is provided `fullimport` is called only if all sanity checks are passed. 
 Sanity checks to be perfomed can be defined in the settings YAML file in the instance like below:
