@@ -35,7 +35,8 @@ def reload():
 
 @cli.command()
 @click.option('--sanitycheck/--no-sanitycheck', default=False, help='Perform full-import only if sanity check succeded.')
-def fullimport(sanitycheck):
+@click.option('--notify', default=False, help="Comma separated list of e-mail to deliver result")
+def fullimport(sanitycheck, notify):
 
     if sanitycheck:
         try:
@@ -45,7 +46,12 @@ def fullimport(sanitycheck):
             sys.exit(1)
 
     c = cli.remote.invoke_fullimport()
-    print(c.json())
+    
+    if notify:
+        c = cli.remote.get_status(True)
+        send_status_notification(cli, notify.split(','), c)
+    else:
+        print(c.json())
 
 
 @cli.command()
