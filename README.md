@@ -87,6 +87,48 @@ Get config from Solr instance passing feature from the list below:
 (venv) $ python -m solrcli --host=my-solr-instance.com --core=core0 getconfig --feature=dataimport
 ```
 
+### Status
+
+Get core status. If you use `--waitfinish` the script will wait until `fullimport` finish.
+
+The `--notify` allows you to receive an email with core counts.
+
+```bash
+Usage: solrcli.py status [OPTIONS]
+
+Options:
+  --waitfinish / --no-waitfinish  Wait if data import is running
+  --notify TEXT                   Comma separated list of e-mail to deliver
+                                  result
+  --help                          Show this message and exit.
+```
+
+
+### Full import
+
+Invoke core data import handler. 
+```bash
+Usage: solrcli.py fullimport [OPTIONS]
+
+Options:
+  --sanitycheck / --no-sanitycheck
+                                  Perform full-import only if sanity check
+                                  succeded.
+  --help                          Show this message and exit.
+```
+
+If `--sanitycheck` is provided `fullimport` is called only if all sanity checks are passed. 
+Sanity checks to be perfomed can be defined in the settings YAML file in the instance like below:
+
+```yaml
+instances:
+  core-test:
+    host: my-solr-instance.com
+    core: core0
+    sanity_checks:
+      column_values_at_least: 
+        column: published
+```
 
 ## TODO
 
