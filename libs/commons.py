@@ -1,4 +1,5 @@
 from pysolr import Solr
+import time
 import click
 import requests
 import os
@@ -31,19 +32,52 @@ def handle_parameters(cli, host, core, config, instance):
                 basic_config = yaml.safe_load(stream)
             except yaml.YAMLError as exc:
                 print(exc)
-                        
-        if basic_config:        
-            host = basic_config[instance]['host']
-            core = basic_config[instance]['core']            
+
+        if basic_config:    
+            try:    
+                host = basic_config['instances'][instance]['host']
+                core = basic_config['instances'][instance]['core']            
+            except KeyError as e:
+                raise ValueError('Configuration error: {}'.format(e))
 
             if not host or not core:
                 raise ValueError('Configuration error: wrong settings in file {}'.format(config))
-        
-            cli.context_settings.update({'config': basic_config})
       
-            return host, core, basic_config[instance]
+            return host, core, basic_config
 
     raise ValueError('Configuration error: missing either config file and command line params')
+
+def send_status_notification(cli, recipients, status):
+    core = cli.instance.get('core') 
+
+    subject = 'Status notification about core {}'.format(core)
+    message = 'Actual {} status: \n'.format(core)
+    message += 'Document Number: {} \n'.format(status.get('numDocs'))
+    message += 'Index Size: {} \n'.format(status.get('size'))
+    message += 'Last modified: {} \n'.format(status.get('lastModified'))
+
+    click.echo('Delivering notification to {}'.format(recipients))    
+
+    assert 'email' in cli.config.keys()
+
+    send_email(cli.config.get('email'), recipients, message, subject)
+
+
+def send_email(config, recipients, message, subject):    
+    import base64
+    import smtplib, ssl    
+    message = message    
+    message = '''\
+Subject: {}
+
+{}
+'''.format(subject, message)
+
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL(config.get('host'), config.get('port'), context=context) as server:
+        server.login(config.get('user'), config.get('password'))
+        server.sendmail(config.get('from'), recipients, message)
+
 
 class SolrServer():
 
@@ -52,10 +86,13 @@ class SolrServer():
     urls = {
         'reload': 'http://{}/solr/admin/cores?action=RELOAD&core={}',
         'full-import': 'http://{}/solr/{}/dataimport?command=full-import',
-        'dataimport-config': 'http://{}/solr/{}/dataimport?command=show-config'
+        'dataimport-config': 'http://{}/solr/{}/dataimport?command=show-config',
+        'status': 'http://{}/solr/admin/cores?action=STATUS&core={}'
     }
 
     def __init__(self, host, core):
+        self.host = host
+        self.core = core
         for k, v in SolrServer.urls.items():
             self.urls[k] = v.format(host, core)
 
@@ -80,3 +117,21 @@ class SolrServer():
         click.echo('Invoking full import: {}'.format(url))
         r = requests.get(url)
         return r
+
+    def get_status(self, waitfinish):
+        url = self.urls.get('status')
+        click.echo('Invoking status: {}'.format(url))
+        r = requests.get(url)
+        response = r.json()
+        self.status = response.get('status').get(self.core).get('index')
+
+        while self.is_indexing and waitfinish:
+            click.echo('Solr core {} indexing is running... sleeping {} seconds'.format(self.core, 10))
+            time.sleep(10)
+            self.get_status(waitfinish)
+        
+        return self.status
+
+    @property
+    def is_indexing(self):
+        return not self.status.get('current')
