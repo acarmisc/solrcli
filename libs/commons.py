@@ -49,9 +49,10 @@ def handle_parameters(cli, host, core, config, instance):
 
 def send_status_notification(cli, recipients, status):
     core = cli.instance.get('core') 
+    host = cli.instance.get('host') 
 
-    subject = 'Status notification about core {}'.format(core)
-    message = 'Actual {} status: \n'.format(core)
+    subject = 'Status notification about {} core {}'.format(host.replace('http://', ''), core)
+    message = 'Actual {} status on {} \n'.format(core, host)
     message += 'Document Number: {} \n'.format(status.get('numDocs'))
     message += 'Index Size: {} \n'.format(status.get('size'))
     message += 'Last modified: {} \n'.format(status.get('lastModified'))
@@ -73,10 +74,12 @@ Subject: {}
 {}
 '''.format(subject, message)
 
-    context = ssl.create_default_context()
-    with smtplib.SMTP_SSL(config.get('host'), config.get('port'), context=context) as server:
-        server.login(config.get('user'), config.get('password'))
-        server.sendmail(config.get('from'), recipients, message)
+    mailserver = smtplib.SMTP(config.get('host'), int(config.get('port')))
+    mailserver.ehlo()
+    mailserver.starttls()
+    mailserver.login(config.get('user'), config.get('password'))
+    mailserver.sendmail(config.get('from'), recipients, message)
+    mailserver.quit()
 
 
 class SolrServer():
