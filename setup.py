@@ -9,7 +9,7 @@ with open('requirements.txt') as f:
 setuptools.setup(
      name='solrcli',  
      py_modules=['solrcli'],
-     version='0.1.2',
+     version='0.1.3',
      author="Andrea Carmisciano",
      author_email="andrea.carmisciano@gmail.com",
      description="A super simple Solr Cli",
