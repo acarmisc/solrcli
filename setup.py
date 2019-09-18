@@ -2,14 +2,10 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-with open('requirements.txt') as f:
-    requirements = f.read().splitlines()
-
-
 setuptools.setup(
      name='solrcli',  
      py_modules=['solrcli'],
-     version='0.1.3',
+     version='0.1.4',
      author="Andrea Carmisciano",
      author_email="andrea.carmisciano@gmail.com",
      description="A super simple Solr Cli",
@@ -22,5 +18,17 @@ setuptools.setup(
          "License :: OSI Approved :: MIT License",
          "Operating System :: OS Independent",
      ],
-     install_requires=requirements
+     install_requires=[
+            'certifi==2019.3.9',
+            'chardet==3.0.4',
+            'Click==7.0',
+            'idna==2.8',
+            'PyMySQL==0.9.3',
+            'pysolr==3.8.1',
+            'PyYAML==5.1.2',
+            'requests==2.22.0',
+            'tqdm==4.35.0',
+            'urllib3==1.25.3',
+            'xmltodict==0.12.0'
+     ]
  )
