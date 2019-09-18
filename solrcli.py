@@ -9,7 +9,7 @@ from libs.commons import SolrServer, handle_parameters, perform_sanitychecks, se
 
 
 @click.group()
-@click.option('--host', help='Solr hostname with port', default='localhost:8983')
+@click.option('--host', help='Solr hostname with port', default='localhost:8984')
 @click.option('--core', help='Solr core')
 @click.option('-c', '--config', help='config file path', default='/home/solruser/etl/conf/solrcli.yml')
 def cli(host, core, config):   
@@ -42,7 +42,7 @@ def fullimport(sanitycheck, notify, notify_to):
 
     if sanitycheck:
         try:
-            perform_sanitychecks(cli.remote, cli.config) #.get_config('dataimport-config'), cli.config.get())
+            perform_sanitychecks(cli.remote, cli.instance)
         except AssertionError as e:
             click.echo(e)            
             sys.exit(1)
