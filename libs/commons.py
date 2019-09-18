@@ -75,7 +75,8 @@ Subject: {}
     mailserver = smtplib.SMTP(config.get('host'), int(config.get('port')))
     mailserver.ehlo()
     mailserver.starttls()
-    mailserver.login(config.get('user'), config.get('password'))
+    if config.get('user'):
+        mailserver.login(config.get('user'), config.get('password'))
     mailserver.sendmail(config.get('from'), recipients, message)
     mailserver.quit()
 
