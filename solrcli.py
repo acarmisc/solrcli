@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import time
 import pprint
 import requests
 import click
@@ -50,6 +50,7 @@ def fullimport(sanitycheck, notify, notify_to):
     c = cli.remote.invoke_fullimport()
     
     if notify:
+        time.sleep(5)
         c = cli.remote.get_status(True)
         notify = notify_to or cli.config.get('email').get('notify_to')
         assert notify, 'No notification address provided'
