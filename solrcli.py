@@ -9,13 +9,12 @@ from libs.commons import SolrServer, handle_parameters, perform_sanitychecks, se
 
 
 @click.group()
-@click.option('--host', help='Solr hostname with port')
+@click.option('--host', help='Solr hostname with port', default='localhost:8983')
 @click.option('--core', help='Solr core')
-@click.option('-c', '--config', help='config file path')
-@click.option('-i', '--instance', help='remote instance from config file')
-def cli(host, core, config, instance):   
+@click.option('-c', '--config', help='config file path', default='/home/solruser/etl/conf/solrcli.yml')
+def cli(host, core, config):   
     try: 
-        host, core, config = handle_parameters(cli, host, core, config, instance)
+        host, core, config, instance = handle_parameters(cli, host, core, config)
     except ValueError as e:
         click.secho(str(e), fg='red')
         sys.exit(1)
@@ -37,8 +36,9 @@ def reload():
 
 @cli.command()
 @click.option('--sanitycheck/--no-sanitycheck', default=False, help='Perform full-import only if sanity check succeded.')
-@click.option('--notify', default=False, help="Comma separated list of e-mail to deliver result")
-def fullimport(sanitycheck, notify):
+@click.option('--notify/--no-notify', default=False, help='whether to send a notification or not')
+@click.option('--notify-to', default=None, help='comma separated list of addresses')
+def fullimport(sanitycheck, notify, notify_to):
 
     if sanitycheck:
         try:
@@ -51,6 +51,8 @@ def fullimport(sanitycheck, notify):
     
     if notify:
         c = cli.remote.get_status(True)
+        notify = notify_to or cli.config.get('email').get('notify_to')
+        assert notify, 'No notification address provided'
         send_status_notification(cli, notify.split(','), c)
     else:
         print(c.json())

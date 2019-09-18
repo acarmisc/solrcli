@@ -1,4 +1,5 @@
 from pysolr import Solr
+import yaml
 import time
 import click
 import requests
@@ -20,21 +21,18 @@ def perform_sanitychecks(remote, config):
     
     assert all(results), 'Sanity check fails. Stopping execution'
 
-def handle_parameters(cli, host, core, config, instance):
-
-    if host and core:
-        return host, core        
-    elif config and instance:
-        assert os.path.isfile(config), 'Config file {} not found.'.format(config)
-        import yaml
-        with open(config, 'r') as stream:
-            try:                
-                basic_config = yaml.safe_load(stream)
-            except yaml.YAMLError as exc:
-                print(exc)
+def handle_parameters(cli, host, core, config):
+    instance = '{}-{}'.format(host, core)
+    
+    assert os.path.isfile(config), 'Config file {} not found.'.format(config)
+    with open(config, 'r') as stream:
+        try:                
+            basic_config = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
 
         if basic_config:    
-            try:    
+            try:
                 host = basic_config['instances'][instance]['host']
                 core = basic_config['instances'][instance]['core']            
             except KeyError as e:
@@ -43,7 +41,7 @@ def handle_parameters(cli, host, core, config, instance):
             if not host or not core:
                 raise ValueError('Configuration error: wrong settings in file {}'.format(config))
       
-            return host, core, basic_config
+            return host, core, basic_config, instance
 
     raise ValueError('Configuration error: missing either config file and command line params')
 
