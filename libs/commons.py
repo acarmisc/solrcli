@@ -1,4 +1,5 @@
 from pysolr import Solr
+import socket
 import yaml
 import time
 import click
@@ -48,18 +49,20 @@ def handle_parameters(cli, host, core, config):
 def send_status_notification(cli, recipients, status=None, failure=False):
     core = cli.instance.get('core') 
     host = cli.instance.get('host') 
+    hostname = socket.gethostname()
 
     if failure:
-        subject = 'Sanity check failed on {} core {}'.format(host.replace('http://', ''), core)
-        message = 'The sanity checks are failed. Please check logs for details'
+        subject = 'Sanity check failed on {} ({}) core {}'.format(hostname, host, core)
+        message = 'The sanity on {} checks are failed. Please check logs for details'.format(hostname)
     else:
         assert status, 'Missing status required for message'
 
-        subject = 'Status notification about {} core {}'.format(host.replace('http://', ''), core)
+        subject = 'Status notification about {} ({}) core {}'.format(hostname, host, core)
         message = 'Actual {} status on {} \n'.format(core, host)
         message += 'Document Number: {} \n'.format(status.get('numDocs'))
         message += 'Index Size: {} \n'.format(status.get('size'))
         message += 'Last modified: {} \n'.format(status.get('lastModified'))
+        message += 'Hostname: {} \n'.format(hostname)
 
     click.echo('Delivering notification to {}'.format(recipients))    
 
