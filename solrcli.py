@@ -36,7 +36,7 @@ def reload():
 
 @cli.command()
 @click.option('--sanitycheck/--no-sanitycheck', default=False, help='Perform full-import only if sanity check succeded.')
-@click.option('--notify/--no-notify', default=False, help='whether to send a notification or not')
+@click.option('--notify/--no-notify', default=False, help='whether to send a notification or not for failure')
 @click.option('--notify-to', default=None, help='comma separated list of addresses')
 def fullimport(sanitycheck, notify, notify_to):
 
@@ -44,19 +44,15 @@ def fullimport(sanitycheck, notify, notify_to):
         try:
             perform_sanitychecks(cli.remote, cli.instance)
         except AssertionError as e:
+            if notify:
+                notify = notify_to or cli.config.get('email').get('notify_to')
+                send_status_notification(cli, notify.split(','), failure=True)
             click.echo(e)            
             sys.exit(1)
 
     c = cli.remote.invoke_fullimport()
     
-    if notify:
-        time.sleep(5)
-        c = cli.remote.get_status(True)
-        notify = notify_to or cli.config.get('email').get('notify_to')
-        assert notify, 'No notification address provided'
-        send_status_notification(cli, notify.split(','), c)
-    else:
-        print(c.json())
+    print(c.json())
 
 
 @cli.command()

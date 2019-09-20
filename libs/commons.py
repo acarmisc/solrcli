@@ -45,15 +45,21 @@ def handle_parameters(cli, host, core, config):
 
     raise ValueError('Configuration error: missing either config file and command line params')
 
-def send_status_notification(cli, recipients, status):
+def send_status_notification(cli, recipients, status=None, failure=False):
     core = cli.instance.get('core') 
     host = cli.instance.get('host') 
 
-    subject = 'Status notification about {} core {}'.format(host.replace('http://', ''), core)
-    message = 'Actual {} status on {} \n'.format(core, host)
-    message += 'Document Number: {} \n'.format(status.get('numDocs'))
-    message += 'Index Size: {} \n'.format(status.get('size'))
-    message += 'Last modified: {} \n'.format(status.get('lastModified'))
+    if failure:
+        subject = 'Sanity check failed on {} core {}'.format(host.replace('http://', ''), core)
+        message = 'The sanity checks are failed. Please check logs for details'
+    else:
+        assert status, 'Missing status required for message'
+
+        subject = 'Status notification about {} core {}'.format(host.replace('http://', ''), core)
+        message = 'Actual {} status on {} \n'.format(core, host)
+        message += 'Document Number: {} \n'.format(status.get('numDocs'))
+        message += 'Index Size: {} \n'.format(status.get('size'))
+        message += 'Last modified: {} \n'.format(status.get('lastModified'))
 
     click.echo('Delivering notification to {}'.format(recipients))    
 
