@@ -5,7 +5,7 @@ Super simple (and small) Command Line Interface to perform frequend actions upon
 Search features are provided from [**pysolr lib**](https://github.com/django-haystack/pysolr/) by [**Django Haystack**](https://github.com/django-haystack).
 
 
-## Installation (not yet available)
+## Installation
 
 ```bash
 pip install solrcli
