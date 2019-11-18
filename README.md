@@ -134,6 +134,15 @@ instances:
         column: published
 ```
 
+## Sanity Checks
+
+We plan to build a set of sanity checks to be performed before full import call to prevent errors or inconsistent data sets.
+
+Currently available sanity checks are:
+
+- `column_values_at_least`: ensure at list `1` or `gt` param value is present in `column`
+- `custom_query`: perform a custom query and check if `expected_result` is returned
+
 ## TODO
 
 * authentication
