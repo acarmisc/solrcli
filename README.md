@@ -56,17 +56,19 @@ Print help informations for main command with `python -m solrcli --help`. Use `-
 Usage: solrcli.py [OPTIONS] COMMAND [ARGS]...
 
 Options:
-  --host TEXT          Solr hostname with port
-  --core TEXT          Solr core
-  -c, --config TEXT    config file path
-  -i, --instance TEXT  remote instance from config file
-  --help               Show this message and exit.
+  --host TEXT                 Solr hostname with port
+  --core TEXT                 Solr core
+  -c, --config TEXT           config file path
+  --skipconf / --no-skipconf  ignore configurations
+  --help                      Show this message and exit.
 
 Commands:
   fullimport
   getconfig
+  query
   reload
-  show-config
+  showsettings
+  status
 ```
 
 ### Reloading
