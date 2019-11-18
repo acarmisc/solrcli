@@ -90,24 +90,38 @@ Subject: {}
     mailserver.quit()
 
 
+def infer_settings(url):
+    from urllib.parse import urlparse
+    url_parts = urlparse(url)
+    app = url_parts.path.split('/')[1]
+    core = url_parts.path.split('/')[2]
+    return url_parts.netloc, app, core
+
 class SolrServer():
 
-    base_url = 'http://{}/solr/{}'
+    base_url = 'http://{}/{}/{}'
 
     urls = {
-        'reload': 'http://{}/solr/admin/cores?action=RELOAD&core={}',
-        'full-import': 'http://{}/solr/{}/dataimport?command=full-import',
-        'dataimport-config': 'http://{}/solr/{}/dataimport?command=show-config',
-        'status': 'http://{}/solr/admin/cores?action=STATUS&core={}'
+        'reload': 'http://{}/{}/admin/cores?action=RELOAD&core={}',
+        'full-import': 'http://{}/{}/{}/dataimport?command=full-import',
+        'dataimport-config': 'http://{}/{}/{}/dataimport?command=show-config',
+        'status': 'http://{}/{}/admin/cores?action=STATUS&core={}'
     }
 
-    def __init__(self, host, core):
+    def __init__(self, host='localhost:8973', core='core0', app=None, url=None):
+        
+        if url is not None:
+            host, app, core = infer_settings(url)
+
         self.host = host
         self.core = core
-        for k, v in SolrServer.urls.items():
-            self.urls[k] = v.format(host, core)
+        self.app = 'solr' if app is None else app
+        self.url = url
 
-        self.q = Solr(SolrServer.base_url.format(host, core))
+        for k, v in SolrServer.urls.items():
+            self.urls[k] = v.format(host, app, core)
+
+        self.q = Solr(SolrServer.base_url.format(host, app, core))
 
     def get_config(self, config_name):
         ALLOWED_NAMES = ['dataimport-config']
@@ -142,6 +156,22 @@ class SolrServer():
             self.get_status(waitfinish)
         
         return self.status
+
+    def raw_query(self, find=None):
+        # TODO: move inside SolrServer
+        r = requests.get(self.url)
+        last_response = r.json()
+        if find:
+            last_response = self.traversing_response(last_response, find)
+
+        return last_response
+
+    def traversing_response(self, data, find, separator='/'):
+        nodes = find.split(separator)
+        for node in nodes:
+            data = data.get(node)
+
+        return data
 
     @property
     def is_indexing(self):

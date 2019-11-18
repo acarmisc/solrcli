@@ -12,16 +12,19 @@ from libs.commons import SolrServer, handle_parameters, perform_sanitychecks, se
 @click.option('--host', help='Solr hostname with port', default='localhost:8984')
 @click.option('--core', help='Solr core')
 @click.option('-c', '--config', help='config file path', default='/home/solruser/etl/conf/solrcli.yml')
-def cli(host, core, config):   
-    try: 
-        host, core, config, instance = handle_parameters(cli, host, core, config)
-    except ValueError as e:
-        click.secho(str(e), fg='red')
-        sys.exit(1)
+@click.option('--skipconf/--no-skipconf', help='ignore configurations', default=False)
+def cli(host, core, config, skipconf):   
+    if not skipconf:
+        try: 
+            host, core, config, instance = handle_parameters(cli, host, core, config)
+        except ValueError as e:
+            click.secho(str(e), fg='red')
+            sys.exit(1)
 
-    cli.remote = SolrServer(host, core)
-    cli.config = config    
-    cli.instance = config['instances'][instance]
+        cli.remote = SolrServer(host, core)
+        cli.config = config    
+        cli.instance = config['instances'][instance]
+    
 
 @cli.command()
 def showsettings():    
@@ -63,7 +66,7 @@ def getconfig(feature):
 
 @cli.command()
 @click.option('--waitfinish/--no-waitfinish', default=False, help='Wait if data import is running')
-@click.option('--notify', default=False, help="Comma separated list of e-mail to deliver result")
+@click.option('--notify', default=False, help='Comma separated list of e-mail to deliver result')
 def status(waitfinish, notify):
     c = cli.remote.get_status(waitfinish)
     pprint.pprint(c)
@@ -71,6 +74,14 @@ def status(waitfinish, notify):
     if notify:
         send_status_notification(cli, notify.split(','), c)
     
+@cli.command()
+@click.option('--url', help='Url to call')
+@click.option('--find', default=False, help='Return only given attribute or childs')
+def query(url, find):
+
+    server = SolrServer(url=url)
+    r = server.raw_query(find=find)    
+    pprint.pprint(r)
 
 if __name__ == '__main__':
     cli()

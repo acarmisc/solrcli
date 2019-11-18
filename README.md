@@ -134,6 +134,53 @@ instances:
         column: published
 ```
 
+### Traversing response
+
+This tool can be used to fetch small parts of an arbitrary response. Assume the following snipped is from a `search` request like http://localhost:8973/solr/core0/search/en?rows=0&warehouse=123 
+
+```json
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 13,
+        "params": {}
+    },
+    "grouped": {
+        "country": {
+            "matches": 320,
+            "ngroups": 212,
+            "groups": []
+            }
+        },
+    ...
+  "facetes_list": {      
+      "facet_fields": {
+        "languages": ["EN", 202,
+                      "PT", 10],
+    ...
+}
+```
+
+Using _solrcli_ we can get a single information
+
+```bash
+$ ./solrcli.py --skipconf query --url="http://localhost:8973/solr/core0/search/en?rows=0&warehouse=123" --find=grouped/contry/ngroups
+```
+
+Will return `212` because this value is extracted from the full response traversing nodes.
+We can also fetch for chils:
+
+```bash
+$ ./solrcli.py --skipconf query --url="http://localhost:8973/solr/core0/search/en?rows=0&warehouse=123" --find=facetes_list/facet_fields/languages
+```
+
+obtaining
+
+```
+["EN", 202, "PT", 10]
+```
+
+
 ## Sanity Checks
 
 We plan to build a set of sanity checks to be performed before full import call to prevent errors or inconsistent data sets.
@@ -147,7 +194,7 @@ Currently available sanity checks are:
 
 * authentication
 * deeper config inspection
-* focus results: perform a `/search` or similar and get back only interesting nodes
+* ~ focus results: perform a `/search` or similar and get back only interesting nodes ~
 * query using URL
 * v2 Api for Solr Cloud
 
