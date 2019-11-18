@@ -170,7 +170,7 @@ $ ./solrcli.py --skipconf query --url="http://localhost:8973/solr/core0/search/e
 ```
 
 Will return `212` because this value is extracted from the full response traversing nodes.
-We can also fetch for chils:
+We can also fetch for childs:
 
 ```bash
 $ ./solrcli.py --skipconf query --url="http://localhost:8973/solr/core0/search/en?rows=0&warehouse=123" --find=facetes_list/facet_fields/languages
