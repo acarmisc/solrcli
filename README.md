@@ -196,7 +196,7 @@ Currently available sanity checks are:
 
 * authentication
 * deeper config inspection
-* ~ focus results: perform a `/search` or similar and get back only interesting nodes ~
+* ~focus results: perform a `/search` or similar and get back only interesting nodes~
 * query using URL
 * v2 Api for Solr Cloud
 
