@@ -138,7 +138,7 @@ instances:
 
 ### Traversing response
 
-This tool can be used to fetch small parts of an arbitrary response. Assume the following snipped is from a `search` request like http://localhost:8973/solr/core0/search/en?rows=0&warehouse=123 
+This tool can be used to fetch small parts of an arbitrary response. Assume the following snippet is from a `search` request like http://localhost:8973/solr/core0/search/en?rows=0&warehouse=123 
 
 ```json
 {
