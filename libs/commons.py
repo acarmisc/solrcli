@@ -168,9 +168,14 @@ class SolrServer():
 
     def traversing_response(self, data, find, separator='/'):
         nodes = find.split(separator)
+        visited = ''
         for node in nodes:
-            data = data.get(node)
-
+            try:
+                data = data[node]
+            except KeyError as e:
+                click.secho(str(e), fg='red')
+                return None
+            
         return data
 
     @property
