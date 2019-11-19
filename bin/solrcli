@@ -5,7 +5,7 @@ import requests
 import click
 from os import sys
 
-from libs.commons import SolrServer, handle_parameters, perform_sanitychecks, send_status_notification
+from solrcli.commons import SolrServer, handle_parameters, perform_sanitychecks, send_status_notification
 
 
 @click.group()

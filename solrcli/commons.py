@@ -6,8 +6,8 @@ import click
 import requests
 import os
 import configparser
-from libs.configurations import dataimport_config
-from libs import sanity_checks
+from solrcli.configurations import dataimport_config
+from solrcli import sanity_checks
 
 
 def perform_sanitychecks(remote, config):
