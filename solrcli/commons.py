@@ -46,6 +46,7 @@ def handle_parameters(cli, host, core, config):
 
     raise ValueError('Configuration error: missing either config file and command line params')
 
+
 def send_status_notification(cli, recipients, status=None, failure=False):
     core = cli.instance.get('core') 
     host = cli.instance.get('host') 
@@ -96,6 +97,7 @@ def infer_settings(url):
     app = url_parts.path.split('/')[1]
     core = url_parts.path.split('/')[2]
     return url_parts.netloc, app, core
+
 
 class SolrServer():
 
@@ -157,8 +159,9 @@ class SolrServer():
         
         return self.status
 
-    def raw_query(self, find=None):
+    def raw_query(self, find=None, custom_path=None):
         # TODO: move inside SolrServer
+        self.url = (self.url + custom_path) if custom_path is not None else self.url
         r = requests.get(self.url)
         last_response = r.json()
         if find:
