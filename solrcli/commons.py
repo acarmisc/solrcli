@@ -159,7 +159,7 @@ class SolrServer():
         
         return self.status
 
-    def raw_query(self, find=None, custom_path=None):
+    def raw_query(self, find=None, custom_path=None, is_facet_count=None):
         # TODO: move inside SolrServer
         self.url = (self.url + custom_path) if custom_path is not None else self.url
         r = requests.get(self.url)
