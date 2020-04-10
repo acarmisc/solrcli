@@ -167,6 +167,12 @@ class SolrServer():
         if find:
             last_response = self.traversing_response(last_response, find)
 
+        if is_facet_count:
+            _value = ''
+            _iter = iter(last_response)
+            _values = ['{}:{}'.format(*x) for x in zip(_iter, _iter)]
+            return ', '.join(_values)
+
         return last_response
 
     def traversing_response(self, data, find, separator='/'):
