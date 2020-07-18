@@ -65,6 +65,7 @@ Options:
 Commands:
   fullimport
   getconfig
+  post
   query
   reload
   showsettings
@@ -105,6 +106,21 @@ Options:
   --help                          Show this message and exit.
 ```
 
+
+### Post
+
+Post initial data eventually fetched from remote storage. 
+If you use `--waitfinish` the script will wait until the server/core is online (aka `200` as status code).
+
+```bash
+Usage: solrcli post [OPTIONS]
+
+Options:
+  --waitfinish / --no-waitfinish  Wait if data import is running
+  --remotepath TEXT               Remote path to look into for initial file
+  --localpath TEXT                Local path where input file will be saved
+  --help                          Show this message and exit.
+```
 
 ### Full import
 
