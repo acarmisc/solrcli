@@ -107,7 +107,8 @@ class SolrServer():
         'reload': 'http://{}/{}/admin/cores?action=RELOAD&core={}',
         'full-import': 'http://{}/{}/{}/dataimport?command=full-import',
         'dataimport-config': 'http://{}/{}/{}/dataimport?command=show-config',
-        'status': 'http://{}/{}/admin/cores?action=STATUS&core={}'
+        'status': 'http://{}/{}/admin/cores?action=STATUS&core={}',
+        'post': 'http://{}/{}/{}/update/json/docs?commit=true'
     }
 
     def __init__(self, host='localhost:8973', core='core0', app=None, url=None):
@@ -121,7 +122,7 @@ class SolrServer():
         self.url = url
 
         for k, v in SolrServer.urls.items():
-            self.urls[k] = v.format(host, app, core)
+            self.urls[k] = v.format(self.host, self.app, self.core)
 
         self.q = Solr(SolrServer.base_url.format(host, app, core))
 
@@ -143,6 +144,20 @@ class SolrServer():
         url = self.urls.get('full-import')
         click.echo('Invoking full import: {}'.format(url))
         r = requests.get(url)
+        return r
+
+    def invoke_post(self, waitfinish, initial_file):
+        url = self.urls.get('post')
+        f = open(initial_file, 'r')
+        payload = f.read()
+
+        while not self.is_online and waitfinish:
+            click.echo('Solr core {} is not available... sleeping {} seconds'.format(self.core, 10))
+            time.sleep(10)
+
+        click.echo('Invoking post: {}'.format(url))
+        r = requests.post(url, data=payload)
+
         return r
 
     def get_status(self, waitfinish):
@@ -190,3 +205,8 @@ class SolrServer():
     @property
     def is_indexing(self):
         return not self.status.get('current')
+
+    @property
+    def is_online(self):
+        r = requests.get(self.urls.get('status'))
+        return r.status_code == 200

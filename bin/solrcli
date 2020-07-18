@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-import time
+import os
 import pprint
-import requests
 import click
 from os import sys
 
@@ -13,22 +12,23 @@ from solrcli.commons import SolrServer, handle_parameters, perform_sanitychecks,
 @click.option('--core', help='Solr core')
 @click.option('-c', '--config', help='config file path', default='/home/solruser/etl/conf/solrcli.yml')
 @click.option('--skipconf/--no-skipconf', help='ignore configurations', default=False)
-def cli(host, core, config, skipconf):   
+def cli(host, core, config, skipconf):
     if not skipconf:
-        try: 
+        try:
             host, core, config, instance = handle_parameters(cli, host, core, config)
         except ValueError as e:
             click.secho(str(e), fg='red')
             sys.exit(1)
 
         cli.remote = SolrServer(host, core)
-        cli.config = config    
+        cli.config = config
         cli.instance = config['instances'][instance]
-    
+
 
 @cli.command()
-def showsettings():    
+def showsettings():
     pprint.pprint(cli.instance)
+
 
 @cli.command()
 def reload():
@@ -38,11 +38,11 @@ def reload():
 
 
 @cli.command()
-@click.option('--sanitycheck/--no-sanitycheck', default=False, help='Perform full-import only if sanity check succeded.')
+@click.option('--sanitycheck/--no-sanitycheck', default=False,
+              help='Perform full-import only if sanity check succeded.')
 @click.option('--notify/--no-notify', default=False, help='whether to send a notification or not for failure')
 @click.option('--notify-to', default=None, help='comma separated list of addresses')
 def fullimport(sanitycheck, notify, notify_to):
-
     if sanitycheck:
         try:
             perform_sanitychecks(cli.remote, cli.instance)
@@ -50,11 +50,41 @@ def fullimport(sanitycheck, notify, notify_to):
             if notify:
                 notify = notify_to or cli.config.get('email').get('notify_to')
                 send_status_notification(cli, notify.split(','), failure=True)
-            click.echo(e)            
+            click.echo(e)
             sys.exit(1)
 
     c = cli.remote.invoke_fullimport()
-    
+
+    print(c.json())
+
+
+@cli.command()
+@click.option('--waitfinish/--no-waitfinish', default=False, help='Wait if data import is running')
+@click.option('--remotepath', default=None, help='Remote path to look into for initial file')
+@click.option('--localpath', default='/tmp/', help='Local path where input file will be saved')
+def post(waitfinish, remotepath, localpath):
+    filename = None
+    if 'initial' in cli.instance.keys():
+        cfg = cli.instance.get('initial')
+        # loading initial data
+        if 'scp' in cfg.keys():
+            filename = cfg.get('scp').get('remote_file')
+            path = cfg.get('scp').get('path', None)
+            if not path and not remotepath:
+                raise ValueError('missing remote path')
+            remote_file = remotepath + filename
+            print('Attempt to fetch {} from {} via SCP...'.format(remote_file, cfg.get('scp').get('host')))
+
+            from solrcli.helpers import get_from_scp
+            get_from_scp(cfg.get('scp'), remote_file, localpath)
+
+    if not filename:
+        raise ValueError('Missing filename for file to post!')
+    localfile = localpath + filename
+    c = cli.remote.invoke_post(waitfinish, localfile)
+
+    os.remove(localfile)
+
     print(c.json())
 
 
@@ -63,6 +93,7 @@ def fullimport(sanitycheck, notify, notify_to):
 def getconfig(feature):
     c = cli.remote.get_config('{}-config'.format(feature))
     print(c)
+
 
 @cli.command()
 @click.option('--waitfinish/--no-waitfinish', default=False, help='Wait if data import is running')
@@ -73,15 +104,16 @@ def status(waitfinish, notify):
 
     if notify:
         send_status_notification(cli, notify.split(','), c)
-    
+
+
 @cli.command()
 @click.option('--url', help='Url to call')
 @click.option('--find', default=False, help='Return only given attribute or childs')
 def query(url, find):
-
     server = SolrServer(url=url)
-    r = server.raw_query(find=find)    
+    r = server.raw_query(find=find)
     pprint.pprint(r)
+
 
 if __name__ == '__main__':
     cli()
