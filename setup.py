@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
      name='solrcli',
-     version='0.1.15',
+     version='0.1.16',
      author="Andrea Carmisciano",
      author_email="andrea.carmisciano@gmail.com",
      description="A super simple Solr Cli",
@@ -19,11 +19,11 @@ setuptools.setup(
          "Operating System :: OS Independent",
      ],
      install_requires=[
-            'certifi==2019.3.9',
+            'certifi',
             'chardet==3.0.4',
             'Click==7.0',
             'idna==2.8',
-            'PyMySQL==0.9.3',
+            'PyMySQL',
             'pysolr==3.8.1',
             'PyYAML==5.1.2',
             'requests==2.22.0',
