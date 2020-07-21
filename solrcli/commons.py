@@ -208,5 +208,11 @@ class SolrServer():
 
     @property
     def is_online(self):
-        r = requests.get(self.urls.get('status'))
+        url = self.urls.get('status')
+        try:
+            r = requests.get(url)
+        except Exception as e:
+            print('Checking {}... Connection failed: {}'.format(url, str(e)))
+            return False
+
         return r.status_code == 200
