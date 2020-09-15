@@ -47,6 +47,7 @@ def fullimport(sanitycheck, notify, notify_to):
         try:
             perform_sanitychecks(cli.remote, cli.instance)
         except AssertionError as e:
+            # TODO: do not reuse notify
             if notify:
                 notify = notify_to or cli.config.get('email').get('notify_to')
                 send_status_notification(cli, notify.split(','), failure=True)
