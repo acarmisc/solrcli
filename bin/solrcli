@@ -1,8 +1,11 @@
 #!/usr/bin/env python
+import json
 import os
 import pprint
 import click
 from os import sys
+
+import yaml
 
 from solrcli.commons import SolrServer, handle_parameters, perform_sanitychecks, send_status_notification
 
@@ -10,7 +13,7 @@ from solrcli.commons import SolrServer, handle_parameters, perform_sanitychecks,
 @click.group()
 @click.option('--host', help='Solr hostname with port', default='localhost:8984')
 @click.option('--core', help='Solr core')
-@click.option('-c', '--config', help='config file path', default='/home/solruser/etl/conf/solrcli.yml')
+@click.option('-c', '--config', help='config file path', default='/etc/solrcli.yml')
 @click.option('--skipconf/--no-skipconf', help='ignore configurations', default=False)
 def cli(host, core, config, skipconf):
     if not skipconf:
@@ -114,6 +117,23 @@ def query(url, find):
     server = SolrServer(url=url)
     r = server.raw_query(find=find)
     pprint.pprint(r)
+
+
+@cli.command()
+@click.option('--dryrun', help='Only print readed data')
+@click.argument('configfile')
+def replicate(dryrun, configfile):
+    with open(configfile) as file:
+        config = yaml.load(file, Loader=yaml.FullLoader)
+
+    cfg = config['replicate']
+    from_server = SolrServer(url=cfg['from'])
+    r = from_server.select(cfg['fields'], cfg['limit'], filters=cfg.get('filters'))
+
+    to_server = SolrServer(url=cfg['to'])
+    to_server.clear()
+    r = to_server.invoke_post(True, payload=json.dumps(r))
+    print(r.text)
 
 
 if __name__ == '__main__':

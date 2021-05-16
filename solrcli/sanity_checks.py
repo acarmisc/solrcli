@@ -21,6 +21,7 @@ def column_values_at_least(db_data, column, gt=1):
     finally:
         connection.close()
 
+
 def custom_query(db_data, query, expected_result, db=None, cast_result=None):
 
     connection = pymysql.connect(host=db_data.get('host'),

@@ -1,55 +1,65 @@
-from pysolr import Solr
+import os
 import socket
-import yaml
 import time
+
 import click
 import requests
-import os
-import configparser
-from solrcli.configurations import dataimport_config
+import yaml
+from pysolr import Solr
+
 from solrcli import sanity_checks
+from solrcli.configurations import dataimport_config
+
+urls = {
+    'reload': 'http://{}/{}/admin/cores?action=RELOAD&core={}',
+    'full-import': 'http://{}/{}/{}/dataimport?command=full-import',
+    'dataimport-config': 'http://{}/{}/{}/dataimport?command=show-config',
+    'status': 'http://{}/{}/admin/cores?action=STATUS&core={}',
+    'post': 'http://{}/{}/{}/update?commit=true'
+}
 
 
 def perform_sanitychecks(remote, config):
     checks = config.get('sanity_checks')
     db_data = remote.get_config('dataimport-config')
     results = []
-    
+
     for k, v in checks.items():
         # injecting db_data in all params
         v['db_data'] = db_data
         results.append(getattr(sanity_checks, k)(**v))
-    
+
     assert all(results), 'Sanity check fails. Stopping execution'
+
 
 def handle_parameters(cli, host, core, config):
     instance = '{}-{}'.format(host, core)
-    
+
     assert os.path.isfile(config), 'Config file {} not found.'.format(config)
     with open(config, 'r') as stream:
-        try:                
+        try:
             basic_config = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
             print(exc)
 
-        if basic_config:    
+        if basic_config:
             try:
                 host = basic_config['instances'][instance]['host']
-                core = basic_config['instances'][instance]['core']            
+                core = basic_config['instances'][instance]['core']
             except KeyError as e:
                 raise ValueError('Configuration error: {}'.format(e))
 
             if not host or not core:
                 raise ValueError('Configuration error: wrong settings in file {}'.format(config))
-      
+
             return host, core, basic_config, instance
 
     raise ValueError('Configuration error: missing either config file and command line params')
 
 
 def send_status_notification(cli, recipients, status=None, failure=False):
-    core = cli.instance.get('core') 
-    host = cli.instance.get('host') 
+    core = cli.instance.get('core')
+    host = cli.instance.get('host')
     hostname = socket.gethostname()
 
     if failure:
@@ -65,17 +75,16 @@ def send_status_notification(cli, recipients, status=None, failure=False):
         message += 'Last modified: {} \n'.format(status.get('lastModified'))
         message += 'Hostname: {} \n'.format(hostname)
 
-    click.echo('Delivering notification to {}'.format(recipients))    
+    click.echo('Delivering notification to {}'.format(recipients))
 
     assert 'email' in cli.config.keys()
 
     send_email(cli.config.get('email'), recipients, message, subject)
 
 
-def send_email(config, recipients, message, subject):    
-    import base64
-    import smtplib, ssl    
-    message = message    
+def send_email(config, recipients, message, subject):
+    import smtplib
+    message = message
     message = '''\
 Subject: {}
 
@@ -100,19 +109,12 @@ def infer_settings(url):
 
 
 class SolrServer():
-
     base_url = 'http://{}/{}/{}'
 
-    urls = {
-        'reload': 'http://{}/{}/admin/cores?action=RELOAD&core={}',
-        'full-import': 'http://{}/{}/{}/dataimport?command=full-import',
-        'dataimport-config': 'http://{}/{}/{}/dataimport?command=show-config',
-        'status': 'http://{}/{}/admin/cores?action=STATUS&core={}',
-        'post': 'http://{}/{}/{}/update/json/docs?commit=true'
-    }
-
     def __init__(self, host='localhost:8973', core='core0', app=None, url=None):
-        
+
+        self.urls = {}
+
         if url is not None:
             host, app, core = infer_settings(url)
 
@@ -121,8 +123,8 @@ class SolrServer():
         self.app = 'solr' if app is None else app
         self.url = url
 
-        for k, v in SolrServer.urls.items():
-            self.urls[k] = v.format(self.host, self.app, self.core)
+        for k, v in urls.items():
+            self.urls[k] = v.format(host, self.app, core)
 
         self.q = Solr(SolrServer.base_url.format(host, app, core))
 
@@ -146,17 +148,19 @@ class SolrServer():
         r = requests.get(url)
         return r
 
-    def invoke_post(self, waitfinish, initial_file):
+    def invoke_post(self, waitfinish, initial_file=None, payload=None):
+        assert initial_file or payload, 'Initial file or a payload must be provided'
         url = self.urls.get('post')
-        f = open(initial_file, 'r')
-        payload = f.read()
+        if initial_file:
+            f = open(initial_file, 'r')
+            payload = f.read()
 
         while not self.is_online and waitfinish:
             click.echo('Solr core {} is not available... sleeping {} seconds'.format(self.core, 10))
             time.sleep(10)
 
         click.echo('Invoking post: {}'.format(url))
-        r = requests.post(url, data=payload)
+        r = requests.post(url, data=payload, headers={'Content-type': 'application/json'})
 
         return r
 
@@ -171,7 +175,7 @@ class SolrServer():
             click.echo('Solr core {} indexing is running... sleeping {} seconds'.format(self.core, 10))
             time.sleep(10)
             self.get_status(waitfinish)
-        
+
         return self.status
 
     def raw_query(self, find=None, custom_path=None, is_facet_count=None):
@@ -190,6 +194,44 @@ class SolrServer():
 
         return last_response
 
+    def select(self, fields, limit, filters=None):
+        url = '{}/select?q=*:*&fl={}&rows={}'.format(self.url, fields, limit)
+        if filters:
+            print('Filtering using: {}'.format(filters))
+            for f in filters.split(','):
+                url += '&fq={}'.format(f)
+        r = requests.get(url)
+        last_response = r.json()
+        docs = last_response.get('response').get('docs')
+        numdocs = len(docs)
+        # mini etl
+        processed = []
+
+        for d in docs:
+            """
+            d['wordified'] = []
+            if d.get('customizable', False):
+                d['wordified'].append('customizable')
+            if d.get('engravable', False):
+                d['wordified'].append('engravable')
+            """
+            processed.append(d)
+
+        print('Read {} documents from {}'.format(numdocs, url))
+        return processed
+
+    def clear(self):
+        url = self.urls.get('post')
+
+        payload = "<delete><query>*:*</query></delete>"
+        headers = {
+            'Content-Type': 'application/xml'
+        }
+
+        response = requests.request("GET", url, headers=headers, data=payload)
+
+        print(response.text)
+
     def traversing_response(self, data, find, separator='/'):
         nodes = find.split(separator)
         visited = ''
@@ -199,7 +241,7 @@ class SolrServer():
             except KeyError as e:
                 click.secho(str(e), fg='red')
                 return None
-            
+
         return data
 
     @property

@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
      name='solrcli',
-     version='0.1.18',
+     version='0.1.23',
      author="Andrea Carmisciano",
      author_email="andrea.carmisciano@gmail.com",
      description="A super simple Solr Cli",
