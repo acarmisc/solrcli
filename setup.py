@@ -28,7 +28,7 @@ setuptools.setup(
             'PyYAML==5.1.2',
             'requests==2.22.0',
             'tqdm==4.35.0',
-            'urllib3==1.25.3',
+            'urllib3==1.25.8',
             'xmltodict==0.12.0',
             'paramiko',
             'scp'
