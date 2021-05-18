@@ -25,7 +25,7 @@ setuptools.setup(
             'idna==2.8',
             'PyMySQL',
             'pysolr==3.8.1',
-            'PyYAML==5.1.2',
+            'PyYAML==5.4',
             'requests==2.22.0',
             'tqdm==4.35.0',
             'urllib3==1.25.3',
